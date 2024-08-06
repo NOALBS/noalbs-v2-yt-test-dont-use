@@ -5,16 +5,42 @@ use tracing::{info, debug, error};
 use youtube_chat::live_chat::LiveChatClientBuilder;
 use crate::{chat::{self, ChatPlatform, HandleMessage}, ChatSender};
 
-pub struct YouTube {
-    live_chat: Arc<Mutex<LiveChatClientBuilder<()>>>,
+pub struct YouTube<U, SF, ENF, CF, ERF> {
+    live_chat: Arc<Mutex<LiveChatClientBuilder<U, SF, ENF, CF, ERF>>>,
     chat_handler_tx: ChatSender,
 }
 
-impl YouTube {
+impl<U, SF, ENF, CF, ERF> YouTube<U, SF, ENF, CF, ERF> 
+where
+    U: Send + Sync + 'static,
+    SF: Fn(U) + Send + Sync + 'static,
+    ENF: Fn(std::io::Error) + Send + Sync + 'static,
+    CF: Fn(chat::ChatMessage) + Send + Sync + 'static,
+    ERF: Fn() + Send + Sync + 'static,
+{
     pub async fn new(chat_handler_tx: ChatSender) -> Result<Self, Box<dyn std::error::Error>> {
         let yt_channel_id = std::env::var("YOUTUBE_CHANNEL_ID")?;
         let live_chat = LiveChatClientBuilder::new()
             .channel_id(yt_channel_id)
+            .on_chat(move |chat_item| {
+                let chat_handler_tx = chat_handler_tx.clone();
+                task::spawn(async move {
+                    debug!("{}: {}", chat_item.author_name, chat_item.message);
+                    let message = HandleMessage::ChatMessage(chat::ChatMessage {
+                        platform: ChatPlatform::Youtube,
+                        permission: chat::Permission::Public,
+                        channel: chat_item.author_name.clone(),
+                        sender: chat_item.author_name.clone(),
+                        message: chat_item.message.clone(),
+                    });
+                    if let Err(e) = chat_handler_tx.send(message).await {
+                        error!("Failed to send chat message: {:?}", e);
+                    }
+                });
+            })
+            .on_error(|err| {
+                error!("YouTube chat error: {:?}", err);
+            })
             .build();
 
         Ok(Self {
@@ -27,37 +53,11 @@ impl YouTube {
         let process_messages = Arc::new(Mutex::new(false));
         let process_messages_clone = process_messages.clone();
 
-        let chat_handler_tx = self.chat_handler_tx.clone();
         let live_chat = self.live_chat.clone();
 
         let chat_handle = task::spawn(async move {
             let mut live_chat = live_chat.lock().unwrap();
-            live_chat
-                .on_chat(move |chat_item| {
-                    let chat_handler_tx = chat_handler_tx.clone();
-                    let process_messages = process_messages.clone();
-                    task::spawn(async move {
-                        if *process_messages.lock().unwrap() {
-                            debug!("{}: {}", chat_item.author_name, chat_item.message);
-                            let message = HandleMessage::ChatMessage(chat::ChatMessage {
-                                platform: ChatPlatform::Youtube,
-                                permission: chat::Permission::Public,
-                                channel: chat_item.author_name.clone(),
-                                sender: chat_item.author_name.clone(),
-                                message: chat_item.message.clone(),
-                            });
-                            if let Err(e) = chat_handler_tx.send(message).await {
-                                error!("Failed to send chat message: {:?}", e);
-                            }
-                        }
-                    });
-                })
-                .on_error(|err| {
-                    error!("YouTube chat error: {:?}", err);
-                })
-                .start()
-                .await
-                .unwrap();
+            live_chat.start().await.unwrap();
 
             let mut interval = time::interval(Duration::from_millis(3000));
             loop {
