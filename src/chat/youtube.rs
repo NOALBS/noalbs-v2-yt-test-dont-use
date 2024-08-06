@@ -38,9 +38,17 @@ impl YoutubeChat {
 
                 info!("{}: {}", author_name, message_content);
 
+                let permission = if chat_item.is_owner {
+                    Permission::Admin
+                } else if chat_item.is_moderator {
+                    Permission::Mod
+                } else {
+                    Permission::Public
+                };
+
                 let chat_message = ChatMessage {
                     platform: ChatPlatform::Youtube,
-                    permission: Permission::Public,
+                    permission,
                     sender: author_name.clone(),
                     message: message_content,
                     channel: yt_channel_id.clone(), // using cloned value
