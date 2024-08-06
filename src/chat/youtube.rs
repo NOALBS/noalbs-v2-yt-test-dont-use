@@ -20,6 +20,7 @@ pub struct YoutubeChat {
 
 impl YoutubeChat {
     pub async fn new(yt_channel_id: String, chat_tx: ChatSender) -> Result<Self, anyhow::Error> {
+        let yt_channel_id_clone = yt_channel_id.clone();
         let live_chat = LiveChatClientBuilder::new()
             .channel_id(yt_channel_id.clone())
             .on_start(Box::new(|_live_id| {
@@ -42,7 +43,7 @@ impl YoutubeChat {
                     permission: Permission::Public,
                     sender: author_name.clone(),
                     message: message_content,
-                    channel: yt_channel_id.clone(), // assuming you have a field channel in ChatMessage
+                    channel: yt_channel_id_clone.clone(), // using cloned value
                 };
 
                 if let Err(e) = chat_tx.blocking_send(HandleMessage::ChatMessage(chat_message)) {
