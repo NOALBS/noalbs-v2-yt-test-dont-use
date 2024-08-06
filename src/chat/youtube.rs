@@ -3,11 +3,10 @@ use std::time::Duration;
 use tokio::{task, time};
 use tracing::{info, debug, error};
 use youtube_chat::live_chat::LiveChatClientBuilder;
-use tokio_stream::StreamExt;
 use crate::{chat::{self, ChatPlatform, HandleMessage}, ChatSender};
 
 pub struct YouTube {
-    live_chat: Arc<Mutex<LiveChatClientBuilder>>,
+    live_chat: Arc<Mutex<LiveChatClientBuilder<U, SF, ENF, CF, ERF>>>,
     chat_handler_tx: ChatSender,
 }
 
