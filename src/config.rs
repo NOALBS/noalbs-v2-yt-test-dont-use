@@ -3,6 +3,7 @@ use std::{collections::HashMap, io::Seek};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
+use crate::chat::ChatPlatform;
 use crate::{chat, error, stream_servers, switcher};
 
 const MAX_LOW_RETRY: u8 = 5;
@@ -186,10 +187,11 @@ impl ConfigChatPlatform {
         match self {
             ConfigChatPlatform::Twitch => chat::ChatPlatform::Twitch,
             ConfigChatPlatform::Kick(_) => chat::ChatPlatform::Kick,
-            ConfigChatPlatform::Youtube(_) => ChatPlatform::Youtube,
+            ConfigChatPlatform::Youtube => chat::ChatPlatform::Youtube,
         }
     }
 }
+
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
