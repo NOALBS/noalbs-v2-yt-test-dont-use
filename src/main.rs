@@ -7,7 +7,7 @@ use tokio::signal;
 use noalbs::{chat::ChatPlatform, config, Noalbs};
 use tracing::warn;
 
-mod chat; // Ensure this points to the correct module path
+mod chat;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -92,7 +92,7 @@ async fn main() -> Result<()> {
 
     if env::var("YOUTUBE_CHANNEL_ID").is_ok() {
         let yt_channel_id = env::var("YOUTUBE_CHANNEL_ID")?;
-        let youtube = chat::youtube::YoutubeChat::new(yt_channel_id, chat_tx.clone());
+        let youtube = chat::youtube::YoutubeChat::new(yt_channel_id, chat_tx.clone()).await?;
         youtube.start().await;
         chat_handler.add_chat_sender(ChatPlatform::Youtube, Arc::new(youtube));
     }
