@@ -13,7 +13,7 @@ pub mod twitch;
 
 pub use chat_handler::ChatHandler;
 pub use kick::Kick;
-pub use youtube::Youtube;
+pub use crate::chat::ChatPlatform::Youtube;
 pub use twitch::Twitch;
 
 #[async_trait]
