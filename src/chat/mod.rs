@@ -14,7 +14,7 @@ pub mod youtube;
 pub use chat_handler::ChatHandler;
 pub use kick::Kick;
 pub use twitch::Twitch;
-pub use youtube::Youtube;
+pub use crate::chat::ChatPlatform::Youtube;
 
 #[async_trait]
 pub trait ChatLogic: Send + Sync {
