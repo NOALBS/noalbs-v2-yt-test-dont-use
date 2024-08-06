@@ -186,7 +186,7 @@ impl ConfigChatPlatform {
         match self {
             ConfigChatPlatform::Twitch => chat::ChatPlatform::Twitch,
             ConfigChatPlatform::Kick(_) => chat::ChatPlatform::Kick,
-            ConfigChatPlatform::Youtube(_) => chat::ChatPlatform::YoutubeChat,
+            ConfigChatPlatform::Youtube(_) => ChatPlatform::Youtube,
         }
     }
 }
