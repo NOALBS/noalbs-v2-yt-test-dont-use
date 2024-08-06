@@ -20,6 +20,7 @@ pub struct YoutubeChat {
 
 impl YoutubeChat {
     pub async fn new(yt_channel_id: String, chat_tx: ChatSender) -> Result<Self, anyhow::Error> {
+        let yt_channel_id;
         let yt_channel_id_clone = yt_channel_id.clone();
         let live_chat = LiveChatClientBuilder::new()
             .channel_id(yt_channel_id.clone())
