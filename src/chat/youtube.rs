@@ -24,10 +24,10 @@ impl YoutubeChat {
             .channel_id(yt_channel_id.clone())
             .on_start(Box::new(|_live_id| {
                 debug!("YouTube live chat started");
-            }))
+            }) as Box<dyn Fn(String) + Send + Sync>)
             .on_error(Box::new(|err| {
                 error!("YouTube live chat error: {:?}", err);
-            }))
+            }) as Box<dyn Fn(anyhow::Error) + Send + Sync>)
             .on_chat(Box::new(move |chat_item: ChatItem| {
                 let author_name = chat_item.author.name.clone().unwrap_or_else(|| "Unknown".to_string());
                 let message_content: String = chat_item.message.iter().map(|m| match m {
@@ -48,10 +48,10 @@ impl YoutubeChat {
                 if let Err(e) = chat_tx.blocking_send(HandleMessage::ChatMessage(chat_message)) {
                     error!("Failed to send chat message: {}", e);
                 }
-            }))
+            }) as Box<dyn Fn(ChatItem) + Send + Sync>)
             .on_end(Box::new(|| {
                 debug!("YouTube live chat ended");
-            }))
+            }) as Box<dyn Fn() + Send + Sync>)
             .build();
 
         Ok(Self {
