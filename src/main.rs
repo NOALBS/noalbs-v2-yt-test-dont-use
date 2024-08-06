@@ -90,9 +90,9 @@ async fn main() -> Result<()> {
     }
 
     if env::var("YOUTUBE_CHANNEL_ID").is_ok() {
-        let youtube = noalbs::chat::YouTube::new(chat_tx.clone()).await?;
+        let youtube = noalbs::chat::Youtube::new(chat_tx.clone()).await?;
         youtube.start().await?;
-        chat_handler.add_chat_sender(ChatPlatform::YouTube, Arc::new(youtube));
+        chat_handler.add_chat_sender(ChatPlatform::Youtube, Arc::new(youtube));
     }
 
     tokio::task::spawn(async move {
