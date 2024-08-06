@@ -6,7 +6,7 @@ use youtube_chat::live_chat::LiveChatClientBuilder;
 use crate::{chat::{self, ChatPlatform, HandleMessage}, ChatSender};
 
 pub struct YouTube {
-    live_chat: Arc<Mutex<LiveChatClientBuilder<U, SF, ENF, CF, ERF>>>,
+    live_chat: Arc<Mutex<LiveChatClientBuilder<()>>>,
     chat_handler_tx: ChatSender,
 }
 
