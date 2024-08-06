@@ -8,7 +8,7 @@ use crate::chat::{self, ChatPlatform, HandleMessage};
 use crate::ChatSender;
 
 pub struct YouTube {
-    live_chat: Arc<Mutex<LiveChatClient>>,
+    live_chat: Arc<Mutex<LiveChatClient<(), (), (), ()>>>,
     chat_handler_tx: ChatSender,
 }
 
@@ -28,7 +28,7 @@ impl YouTube {
                         permission: chat::Permission::Public,
                         channel: chat_item.author.name.clone().unwrap_or_default(),
                         sender: chat_item.author.name.clone().unwrap_or_default(),
-                        message: chat_item.message.iter().map(|msg| msg.message.clone().unwrap_or_default()).collect::<Vec<_>>().join(" "),
+                        message: chat_item.message.iter().map(|msg| msg.text.clone().unwrap_or_default()).collect::<Vec<_>>().join(" "),
                     });
                     if let Err(e) = chat_handler_tx.send(message).await {
                         error!("Failed to send chat message: {:?}", e);
