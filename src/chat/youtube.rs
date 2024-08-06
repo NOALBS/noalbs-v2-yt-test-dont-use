@@ -1,14 +1,14 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::{task, time};
-use tracing::{info, debug, error};
-use youtube_chat::live_chat::{LiveChatClientBuilder, LiveChatClient};
+use tracing::{info, error, debug};
+use youtube_chat::live_chat::LiveChatClientBuilder;
 use youtube_chat::item::ChatItem;
 use crate::chat::{self, ChatPlatform, HandleMessage};
 use crate::ChatSender;
 
 pub struct YouTube {
-    live_chat: Arc<Mutex<LiveChatClient<(), (), (), ()>>>,
+    live_chat: Arc<Mutex<LiveChatClientBuilder<(), (), (), ()>>>,
     chat_handler_tx: ChatSender,
 }
 
@@ -47,9 +47,6 @@ impl YouTube {
     }
 
     pub async fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let process_messages = Arc::new(Mutex::new(false));
-        let process_messages_clone = process_messages.clone();
-
         let live_chat = self.live_chat.clone();
 
         let chat_handle = task::spawn(async move {
@@ -63,13 +60,7 @@ impl YouTube {
             }
         });
 
-        let start_handle = task::spawn(async move {
-            time::sleep(Duration::from_secs(5)).await;
-            *process_messages_clone.lock().unwrap() = true;
-            info!("Started processing new messages");
-        });
-
-        tokio::try_join!(chat_handle, start_handle)?;
+        chat_handle.await.unwrap();
         Ok(())
     }
 }
