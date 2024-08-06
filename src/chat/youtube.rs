@@ -28,6 +28,8 @@ impl YoutubeChat {
                 error!("YouTube live chat error: {:?}", err);
             }) as Box<dyn Fn(anyhow::Error) + Send + Sync>)
             .on_chat(Box::new(move |chat_item: ChatItem| {
+                let chat_tx = chat_tx.clone();
+                let yt_channel_id = yt_channel_id.clone();
                 let author_name = chat_item.author.name.clone().unwrap_or_else(|| "Unknown".to_string());
                 let message_content: String = chat_item.message.iter().map(|m| match m {
                     MessageItem::Text(text) => text.clone(),
@@ -44,9 +46,11 @@ impl YoutubeChat {
                     channel: yt_channel_id.clone(), // using cloned value
                 };
 
-                if let Err(e) = chat_tx.blocking_send(HandleMessage::ChatMessage(chat_message)) {
-                    error!("Failed to send chat message: {}", e);
-                }
+                tokio::spawn(async move {
+                    if let Err(e) = chat_tx.send(HandleMessage::ChatMessage(chat_message)).await {
+                        error!("Failed to send chat message: {}", e);
+                    }
+                });
             }) as Box<dyn Fn(ChatItem) + Send + Sync>)
             .on_end(Box::new(|| {
                 debug!("YouTube live chat ended");
