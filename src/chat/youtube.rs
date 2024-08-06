@@ -2,15 +2,20 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task;
 use tokio::time::{self, Duration};
-use youtube_chat::live_chat::LiveChatClientBuilder;
+use youtube_chat::live_chat::{LiveChatClient, LiveChatClientBuilder};
 use youtube_chat::item::MessageItem;
 
-use noalbs::chat::{ChatMessage, ChatSender};
+use crate::chat::{ChatMessage, ChatSender}; // Correctly import the crate
 use tracing::{debug, error, info};
 
 pub struct YoutubeChat {
     yt_channel_id: String,
-    live_chat: Arc<Mutex<LiveChatClient<Box<dyn Fn(String) + Send + Sync>, Box<dyn Fn() + Send + Sync>, Box<dyn Fn(youtube_chat::item::ChatItem) + Send + Sync>, Box<dyn Fn(anyhow::Error) + Send + Sync>>>>,
+    live_chat: Arc<Mutex<LiveChatClient<
+        Box<dyn Fn(String) + Send + Sync>,
+        Box<dyn Fn() + Send + Sync>,
+        Box<dyn Fn(youtube_chat::item::ChatItem) + Send + Sync>,
+        Box<dyn Fn(anyhow::Error) + Send + Sync>,
+    >>>,
 }
 
 impl YoutubeChat {
@@ -24,7 +29,7 @@ impl YoutubeChat {
                 error!("YouTube live chat error: {:?}", err);
             }))
             .on_chat(Box::new(move |chat_item| {
-                let author_name = chat_item.author.name.unwrap_or("Unknown".to_string());
+                let author_name = chat_item.author.name.clone().unwrap_or_else(|| "Unknown".to_string());
                 let message_content: String = chat_item.message.iter().map(|m| match m {
                     MessageItem::Text(text) => text.clone(),
                     _ => "".to_string(),
