@@ -3,9 +3,9 @@ use tokio::sync::Mutex;
 use tokio::task;
 use tokio::time::{self, Duration};
 use youtube_chat::live_chat::{LiveChatClient, LiveChatClientBuilder};
-use youtube_chat::item::MessageItem;
+use youtube_chat::item::{ChatItem, MessageItem};
 
-use crate::{ChatSender, chat::ChatMessage}; // Adjust import
+use crate::{ChatSender, chat::{ChatMessage, ChatPlatform, Permission, HandleMessage}};
 use tracing::{debug, error, info};
 
 pub struct YoutubeChat {
@@ -13,7 +13,7 @@ pub struct YoutubeChat {
     live_chat: Arc<Mutex<LiveChatClient<
         Box<dyn Fn(String) + Send + Sync>,
         Box<dyn Fn() + Send + Sync>,
-        Box<dyn Fn(youtube_chat::item::ChatItem) + Send + Sync>,
+        Box<dyn Fn(ChatItem) + Send + Sync>,
         Box<dyn Fn(anyhow::Error) + Send + Sync>,
     >>>,
 }
@@ -28,7 +28,7 @@ impl YoutubeChat {
             .on_error(Box::new(|err| {
                 error!("YouTube live chat error: {:?}", err);
             }))
-            .on_chat(Box::new(move |chat_item| {
+            .on_chat(Box::new(move |chat_item: ChatItem| {
                 let author_name = chat_item.author.name.clone().unwrap_or_else(|| "Unknown".to_string());
                 let message_content: String = chat_item.message.iter().map(|m| match m {
                     MessageItem::Text(text) => text.clone(),
@@ -38,14 +38,14 @@ impl YoutubeChat {
                 info!("{}: {}", author_name, message_content);
 
                 let chat_message = ChatMessage {
-                    platform: "Youtube".to_string(),
-                    permission: "Public".to_string(),
+                    platform: ChatPlatform::Youtube,
+                    permission: Permission::Public,
                     sender: author_name.clone(),
-                    display_name: author_name,
                     message: message_content,
+                    channel: yt_channel_id.clone(), // assuming you have a field channel in ChatMessage
                 };
 
-                if let Err(e) = chat_tx.blocking_send(chat_message) {
+                if let Err(e) = chat_tx.blocking_send(HandleMessage::ChatMessage(chat_message)) {
                     error!("Failed to send chat message: {}", e);
                 }
             }))
