@@ -4,7 +4,7 @@ use tokio::{task, time};
 use tracing::{info, debug, error};
 use youtube_chat::live_chat::LiveChatClientBuilder;
 use tokio_stream::StreamExt;
-use crate::chat::{self, ChatPlatform, HandleMessage, ChatSender};
+use crate::{chat::{self, ChatPlatform, HandleMessage}, ChatSender};
 
 pub struct YouTube {
     live_chat: Arc<Mutex<LiveChatClientBuilder>>,
@@ -35,17 +35,23 @@ impl YouTube {
             let mut live_chat = live_chat.lock().unwrap();
             live_chat
                 .on_chat(move |chat_item| {
-                    if *process_messages.lock().unwrap() {
-                        debug!("{}: {}", chat_item.author_name, chat_item.message);
-                        let message = HandleMessage::ChatMessage(chat::ChatMessage {
-                            platform: ChatPlatform::Youtube,
-                            permission: chat::Permission::Public,
-                            channel: chat_item.author_name.clone(),
-                            sender: chat_item.author_name.clone(),
-                            message: chat_item.message.clone(),
-                        });
-                        chat_handler_tx.send(message).await.unwrap();
-                    }
+                    let chat_handler_tx = chat_handler_tx.clone();
+                    let process_messages = process_messages.clone();
+                    task::spawn(async move {
+                        if *process_messages.lock().unwrap() {
+                            debug!("{}: {}", chat_item.author_name, chat_item.message);
+                            let message = HandleMessage::ChatMessage(chat::ChatMessage {
+                                platform: ChatPlatform::Youtube,
+                                permission: chat::Permission::Public,
+                                channel: chat_item.author_name.clone(),
+                                sender: chat_item.author_name.clone(),
+                                message: chat_item.message.clone(),
+                            });
+                            if let Err(e) = chat_handler_tx.send(message).await {
+                                error!("Failed to send chat message: {:?}", e);
+                            }
+                        }
+                    });
                 })
                 .on_error(|err| {
                     error!("YouTube chat error: {:?}", err);
