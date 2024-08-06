@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::{task, time};
 use tracing::{info, debug, error};
-use youtube_chat::LiveChatClientBuilder;
+use youtube_chat::live_chat::LiveChatClientBuilder;
 use tokio_stream::StreamExt;
 use crate::chat::{self, ChatPlatform, HandleMessage, ChatSender};
 
