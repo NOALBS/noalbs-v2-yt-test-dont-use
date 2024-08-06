@@ -3,7 +3,6 @@ use std::{collections::HashMap, io::Seek};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
-use crate::chat::{ChatPlatform, ChatLanguage, Command};
 use crate::{chat, error, stream_servers, switcher};
 
 const MAX_LOW_RETRY: u8 = 5;
