@@ -5,11 +5,10 @@ use tokio::time::{self, Duration};
 use youtube_chat::live_chat::{LiveChatClient, LiveChatClientBuilder};
 use youtube_chat::item::{ChatItem, MessageItem};
 
-use crate::{ChatSender, chat::{ChatMessage, ChatPlatform, Permission, HandleMessage}};
+use crate::{ChatSender, chat::{ChatMessage, ChatPlatform, Permission, HandleMessage, ChatLogic}};
 use tracing::{debug, error, info};
 
 pub struct YoutubeChat {
-    yt_channel_id: String,
     live_chat: Arc<Mutex<LiveChatClient<
         Box<dyn Fn(String) + Send + Sync>,
         Box<dyn Fn() + Send + Sync>,
@@ -20,8 +19,6 @@ pub struct YoutubeChat {
 
 impl YoutubeChat {
     pub async fn new(yt_channel_id: String, chat_tx: ChatSender) -> Result<Self, anyhow::Error> {
-        let yt_channel_id = yt_channel_id;
-        let yt_channel_id_clone = yt_channel_id.clone();
         let live_chat = LiveChatClientBuilder::new()
             .channel_id(yt_channel_id.clone())
             .on_start(Box::new(|_live_id| {
@@ -44,7 +41,7 @@ impl YoutubeChat {
                     permission: Permission::Public,
                     sender: author_name.clone(),
                     message: message_content,
-                    channel: yt_channel_id_clone.clone(), // using cloned value
+                    channel: yt_channel_id.clone(), // using cloned value
                 };
 
                 if let Err(e) = chat_tx.blocking_send(HandleMessage::ChatMessage(chat_message)) {
@@ -57,7 +54,6 @@ impl YoutubeChat {
             .build();
 
         Ok(Self {
-            yt_channel_id,
             live_chat: Arc::new(Mutex::new(live_chat)),
         })
     }
@@ -82,5 +78,14 @@ impl YoutubeChat {
         });
 
         fetch_handle.await.unwrap();
+    }
+}
+
+#[async_trait::async_trait]
+impl ChatLogic for YoutubeChat {
+    async fn send_message(&self, _channel: String, _message: String) {
+        // YouTube live chat API does not support sending messages directly
+        // So we will leave this method unimplemented
+        tracing::debug!("Sending messages to YouTube chat is not supported.");
     }
 }
