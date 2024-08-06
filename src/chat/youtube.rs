@@ -10,20 +10,20 @@ use tracing::{debug, error, info};
 
 pub struct YoutubeChat {
     yt_channel_id: String,
-    live_chat: Arc<Mutex<LiveChatClient<impl Fn(String), impl Fn(), impl Fn(youtube_chat::item::ChatItem), impl Fn(anyhow::Error)>>>,
+    live_chat: Arc<Mutex<LiveChatClient<Box<dyn Fn(String) + Send + Sync>, Box<dyn Fn() + Send + Sync>, Box<dyn Fn(youtube_chat::item::ChatItem) + Send + Sync>, Box<dyn Fn(anyhow::Error) + Send + Sync>>>>,
 }
 
 impl YoutubeChat {
-    pub fn new(yt_channel_id: String, chat_tx: ChatSender) -> Self {
+    pub async fn new(yt_channel_id: String, chat_tx: ChatSender) -> Result<Self, anyhow::Error> {
         let live_chat = LiveChatClientBuilder::new()
             .channel_id(yt_channel_id.clone())
-            .on_start(|_live_id| {
+            .on_start(Box::new(|_live_id| {
                 debug!("YouTube live chat started");
-            })
-            .on_error(|err| {
+            }))
+            .on_error(Box::new(|err| {
                 error!("YouTube live chat error: {:?}", err);
-            })
-            .on_chat(move |chat_item| {
+            }))
+            .on_chat(Box::new(move |chat_item| {
                 let author_name = chat_item.author.name.unwrap_or("Unknown".to_string());
                 let message_content: String = chat_item.message.iter().map(|m| match m {
                     MessageItem::Text(text) => text.clone(),
@@ -40,18 +40,19 @@ impl YoutubeChat {
                     message_content,
                 );
 
-                // Send the chat message through the channel
-                let _ = chat_tx.try_send(chat_message);
-            })
-            .on_end(|| {
+                if let Err(e) = chat_tx.blocking_send(chat_message) {
+                    error!("Failed to send chat message: {}", e);
+                }
+            }))
+            .on_end(Box::new(|| {
                 debug!("YouTube live chat ended");
-            })
+            }))
             .build();
 
-        YoutubeChat {
+        Ok(Self {
             yt_channel_id,
             live_chat: Arc::new(Mutex::new(live_chat)),
-        }
+        })
     }
 
     pub async fn start(&self) {
