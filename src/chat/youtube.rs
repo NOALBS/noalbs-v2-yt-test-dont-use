@@ -1,14 +1,14 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::{task, time};
-use tracing::{info, error, debug};
-use youtube_chat::live_chat::LiveChatClientBuilder;
+use tracing::{error, debug};
+use youtube_chat::live_chat::{LiveChatClientBuilder, LiveChatClient, Empty};
 use youtube_chat::item::ChatItem;
 use crate::chat::{self, ChatPlatform, HandleMessage};
 use crate::ChatSender;
 
 pub struct YouTube {
-    live_chat: Arc<Mutex<LiveChatClientBuilder<(), (), (), ()>>>,
+    live_chat: Arc<Mutex<LiveChatClient<Empty, Empty, Empty, Empty>>>,
     chat_handler_tx: ChatSender,
 }
 
