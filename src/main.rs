@@ -35,7 +35,6 @@ async fn main() -> Result<()> {
 
     let user_manager = noalbs::user_manager::UserManager::new();
 
-    // Used to send messages to the chat handler
     let (chat_tx, chat_rx) = tokio::sync::mpsc::channel(100);
     let mut chat_handler = noalbs::chat::ChatHandler::new(chat_rx, user_manager.clone());
 
@@ -66,7 +65,7 @@ async fn main() -> Result<()> {
         }
 
         chat_handler.add_chat_sender(ChatPlatform::Twitch, Arc::new(twitch));
-    }
+    };
 
     if user_manager
         .get_all_chat()
@@ -90,7 +89,7 @@ async fn main() -> Result<()> {
     }
 
     if env::var("YOUTUBE_CHANNEL_ID").is_ok() {
-        let youtube = noalbs::chat::Youtube::new(chat_tx.clone()).await?;
+        let youtube = noalbs::chat::YouTube::new(chat_tx.clone()).await?;
         youtube.start().await?;
         chat_handler.add_chat_sender(ChatPlatform::Youtube, Arc::new(youtube));
     }
@@ -185,7 +184,7 @@ fn check_env_file() {
         warn!("Couldn't load chat credentials from .env - continuing without connecting to chat.");
         warn!("Hint: edit .env it with your login information - see README");
         warn!("https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/tree/v2#readme");
-    }
+    };
 }
 
 fn appender() -> Box<dyn std::io::Write + Send + 'static> {
