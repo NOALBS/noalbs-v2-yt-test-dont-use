@@ -28,6 +28,7 @@ impl ChatHandler {
         let mut timeouts = HashMap::new();
         timeouts.insert(chat::ChatPlatform::Twitch, Vec::new());
         timeouts.insert(chat::ChatPlatform::Kick, Vec::new());
+        timeouts.insert(chat::ChatPlatform::Youtube, Vec::new());
 
         Self {
             chat_handler_rx,
@@ -827,6 +828,7 @@ impl DispatchCommand {
             let url = match info.platform {
                 chat::ChatPlatform::Twitch => "https://twitch.tv/",
                 chat::ChatPlatform::Kick => "https://kick.com/",
+                chat::ChatPlatform::Youtube => "https://youtube.com/",
             };
             let channel = format!("{url}{}", &info.target);
 
