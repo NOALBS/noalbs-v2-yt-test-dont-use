@@ -8,10 +8,12 @@ use crate::{error, switcher};
 
 pub mod chat_handler;
 pub mod kick;
+pub mod youtube;
 pub mod twitch;
 
 pub use chat_handler::ChatHandler;
 pub use kick::Kick;
+pub use youtube::Youtube;
 pub use twitch::Twitch;
 
 #[async_trait]
@@ -114,6 +116,7 @@ pub struct CommandPermissions {
 pub enum ChatPlatform {
     Twitch,
     Kick,
+    Youtube,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
