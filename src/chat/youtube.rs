@@ -2,36 +2,31 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::{task, time};
 use tracing::{info, debug, error};
-use youtube_chat::live_chat::LiveChatClientBuilder;
-use crate::{chat::{self, ChatPlatform, HandleMessage}, ChatSender};
+use youtube_chat::{LiveChatClientBuilder, item::ChatItem};
+use crate::chat::{self, ChatPlatform, HandleMessage, ChatSender};
 
-pub struct YouTube<U, SF, ENF, CF, ERF> {
-    live_chat: Arc<Mutex<LiveChatClientBuilder<U, SF, ENF, CF, ERF>>>,
+pub struct YouTube {
+    live_chat: Arc<Mutex<youtube_chat::LiveChatClient>>,
     chat_handler_tx: ChatSender,
 }
 
-impl<U, SF, ENF, CF, ERF> YouTube<U, SF, ENF, CF, ERF> 
-where
-    U: Send + Sync + 'static,
-    SF: Fn(U) + Send + Sync + 'static,
-    ENF: Fn(std::io::Error) + Send + Sync + 'static,
-    CF: Fn(chat::ChatMessage) + Send + Sync + 'static,
-    ERF: Fn() + Send + Sync + 'static,
-{
+impl YouTube {
     pub async fn new(chat_handler_tx: ChatSender) -> Result<Self, Box<dyn std::error::Error>> {
         let yt_channel_id = std::env::var("YOUTUBE_CHANNEL_ID")?;
+        let chat_handler_tx_clone = chat_handler_tx.clone();
+
         let live_chat = LiveChatClientBuilder::new()
             .channel_id(yt_channel_id)
-            .on_chat(move |chat_item| {
-                let chat_handler_tx = chat_handler_tx.clone();
+            .on_chat(move |chat_item: ChatItem| {
+                let chat_handler_tx = chat_handler_tx_clone.clone();
                 task::spawn(async move {
-                    debug!("{}: {}", chat_item.author_name, chat_item.message);
+                    debug!("{}: {:?}", chat_item.author.name, chat_item.message);
                     let message = HandleMessage::ChatMessage(chat::ChatMessage {
                         platform: ChatPlatform::Youtube,
                         permission: chat::Permission::Public,
-                        channel: chat_item.author_name.clone(),
-                        sender: chat_item.author_name.clone(),
-                        message: chat_item.message.clone(),
+                        channel: chat_item.author.name.clone(),
+                        sender: chat_item.author.name.clone(),
+                        message: chat_item.message.iter().map(|msg| msg.text.clone()).collect::<Vec<_>>().join(" "),
                     });
                     if let Err(e) = chat_handler_tx.send(message).await {
                         error!("Failed to send chat message: {:?}", e);
