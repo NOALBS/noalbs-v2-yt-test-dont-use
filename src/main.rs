@@ -7,8 +7,6 @@ use tokio::signal;
 use noalbs::{chat::ChatPlatform, config, Noalbs};
 use tracing::warn;
 
-mod chat;
-
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenv::dotenv().ok();
@@ -37,6 +35,7 @@ async fn main() -> Result<()> {
 
     let user_manager = noalbs::user_manager::UserManager::new();
 
+    // Used to send messages to the chat handler
     let (chat_tx, chat_rx) = tokio::sync::mpsc::channel(100);
     let mut chat_handler = noalbs::chat::ChatHandler::new(chat_rx, user_manager.clone());
 
