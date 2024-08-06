@@ -2,11 +2,13 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::{task, time};
 use tracing::{info, debug, error};
-use youtube_chat::{LiveChatClientBuilder, item::ChatItem};
-use crate::chat::{self, ChatPlatform, HandleMessage, ChatSender};
+use youtube_chat::live_chat::{LiveChatClientBuilder, LiveChatClient};
+use youtube_chat::item::ChatItem;
+use crate::chat::{self, ChatPlatform, HandleMessage};
+use crate::ChatSender;
 
 pub struct YouTube {
-    live_chat: Arc<Mutex<youtube_chat::LiveChatClient>>,
+    live_chat: Arc<Mutex<LiveChatClient>>,
     chat_handler_tx: ChatSender,
 }
 
@@ -20,13 +22,13 @@ impl YouTube {
             .on_chat(move |chat_item: ChatItem| {
                 let chat_handler_tx = chat_handler_tx_clone.clone();
                 task::spawn(async move {
-                    debug!("{}: {:?}", chat_item.author.name, chat_item.message);
+                    debug!("{:?}: {:?}", chat_item.author.name, chat_item.message);
                     let message = HandleMessage::ChatMessage(chat::ChatMessage {
                         platform: ChatPlatform::Youtube,
                         permission: chat::Permission::Public,
-                        channel: chat_item.author.name.clone(),
-                        sender: chat_item.author.name.clone(),
-                        message: chat_item.message.iter().map(|msg| msg.text.clone()).collect::<Vec<_>>().join(" "),
+                        channel: chat_item.author.name.clone().unwrap_or_default(),
+                        sender: chat_item.author.name.clone().unwrap_or_default(),
+                        message: chat_item.message.iter().map(|msg| msg.message.clone().unwrap_or_default()).collect::<Vec<_>>().join(" "),
                     });
                     if let Err(e) = chat_handler_tx.send(message).await {
                         error!("Failed to send chat message: {:?}", e);
