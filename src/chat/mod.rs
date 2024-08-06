@@ -8,13 +8,13 @@ use crate::{error, switcher};
 
 pub mod chat_handler;
 pub mod kick;
-pub mod youtube;
 pub mod twitch;
+pub mod youtube;
 
 pub use chat_handler::ChatHandler;
 pub use kick::Kick;
-pub use crate::chat::ChatPlatform::Youtube;
 pub use twitch::Twitch;
+pub use youtube::Youtube;
 
 #[async_trait]
 pub trait ChatLogic: Send + Sync {
