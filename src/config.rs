@@ -170,6 +170,7 @@ impl Default for Chat {
 pub enum ConfigChatPlatform {
     Twitch,
     Kick(KickConfig),
+    Youtube,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -185,6 +186,7 @@ impl ConfigChatPlatform {
         match self {
             ConfigChatPlatform::Twitch => chat::ChatPlatform::Twitch,
             ConfigChatPlatform::Kick(_) => chat::ChatPlatform::Kick,
+            ConfigChatPlatform::Youtube(_) => chat::ChatPlatform::YoutubeChat,
         }
     }
 }
