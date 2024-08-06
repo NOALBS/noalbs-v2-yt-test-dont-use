@@ -2,13 +2,13 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::{task, time};
 use tracing::{error, debug};
-use youtube_chat::live_chat::{LiveChatClientBuilder, LiveChatClient, Empty};
+use youtube_chat::live_chat::{LiveChatClientBuilder, LiveChatClient};
 use youtube_chat::item::ChatItem;
 use crate::chat::{self, ChatPlatform, HandleMessage};
 use crate::ChatSender;
 
 pub struct YouTube {
-    live_chat: Arc<Mutex<LiveChatClient<Empty, Empty, Empty, Empty>>>,
+    live_chat: Arc<Mutex<LiveChatClient>>,
     chat_handler_tx: ChatSender,
 }
 
@@ -19,6 +19,12 @@ impl YouTube {
 
         let live_chat = LiveChatClientBuilder::new()
             .channel_id(yt_channel_id)
+            .on_start(|_live_id| {
+                debug!("YouTube live chat started");
+            })
+            .on_error(|err| {
+                error!("YouTube chat error: {:?}", err);
+            })
             .on_chat(move |chat_item: ChatItem| {
                 let chat_handler_tx = chat_handler_tx_clone.clone();
                 task::spawn(async move {
@@ -35,10 +41,11 @@ impl YouTube {
                     }
                 });
             })
-            .on_error(|err| {
-                error!("YouTube chat error: {:?}", err);
+            .on_end(|| {
+                debug!("YouTube live chat ended");
             })
-            .build();
+            .build()
+            .unwrap();
 
         Ok(Self {
             live_chat: Arc::new(Mutex::new(live_chat)),
