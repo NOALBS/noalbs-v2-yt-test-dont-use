@@ -5,7 +5,7 @@ use tokio::time::{self, Duration};
 use youtube_chat::live_chat::{LiveChatClient, LiveChatClientBuilder};
 use youtube_chat::item::MessageItem;
 
-use crate::chat::{ChatMessage, ChatSender}; // Correctly import the crate
+use crate::{ChatSender, chat::ChatMessage}; // Adjust import
 use tracing::{debug, error, info};
 
 pub struct YoutubeChat {
@@ -37,13 +37,13 @@ impl YoutubeChat {
 
                 info!("{}: {}", author_name, message_content);
 
-                let chat_message = ChatMessage::new(
-                    "Youtube".to_string(),
-                    "Public".to_string(),
-                    author_name.clone(),
-                    author_name,
-                    message_content,
-                );
+                let chat_message = ChatMessage {
+                    platform: "Youtube".to_string(),
+                    permission: "Public".to_string(),
+                    sender: author_name.clone(),
+                    display_name: author_name,
+                    message: message_content,
+                };
 
                 if let Err(e) = chat_tx.blocking_send(chat_message) {
                     error!("Failed to send chat message: {}", e);
